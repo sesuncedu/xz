@@ -1,17 +1,83 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:3.3.0'
+    }
+}
 group 'org.tukaani'
 version '1.7-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply plugin: 'biz.aQute.bnd.builder'
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    mavenLocal()
+
 }
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    baseline(group: 'org.tukaani', name: "xz", version: '1.6') {
+        force = true
+    }
 }
 sourceSets {
-    demo
+    demo {
+        java {
+            compileClasspath = sourceSets.main.output
+        }
+    }
+    main {
+           
+            resources {
+                srcDirs =["/home/ses/src/xz/src/main/java"]
+                includes = ["**/packageinfo"]
+            }
+        
+    }
+}
+
+jar {
+    from sourceSets.main.output
+    from(sourceSets.main.allJava) {
+        include "**/packageinfo"
+    }
+    manifest {
+        attributes('Export-Package': 'org.tukaani.xz;-noimport:=true',
+                "Bundle-SymbolicName": 'org.tukaani.xz',
+                '-sources': 'true'
+        )
+    }
+}
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+    from sourceSets.demo.allJava
+}
+task javadocJar(type: Jar) {
+    dependsOn javadoc
+    from javadoc.outputs
+}
+baseline {
+    baseline configurations.baseline
+}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+        }
+    }
 }
