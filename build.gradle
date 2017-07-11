@@ -1,11 +1,16 @@
 buildscript {
     repositories {
         mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:3.3.0'
+        classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.4"
     }
 }
+apply plugin: "me.champeau.gradle.jmh"
 group 'org.tukaani'
 version '1.7-SNAPSHOT'
 
@@ -23,6 +28,13 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'org.slf4j:slf4j-api:1.7.25'
+    testCompile 'org.slf4j:slf4j-simple:1.7.25'
+
+    jmh 'org.openjdk.jmh:jmh-core:[1,2)'
+    jmh 'commons-io:commons-io:2.5'
+    compileOnly 'commons-io:commons-io:2.5'
+    compileOnly 'org.openjdk.jmh:jmh-core:[1,2)'
     baseline(group: 'org.tukaani', name: "xz", version: '1.6') {
         force = true
     }
@@ -34,12 +46,12 @@ sourceSets {
         }
     }
     main {
-           
+
             resources {
                 srcDirs =["/home/ses/src/xz/src/main/java"]
                 includes = ["**/packageinfo"]
             }
-        
+
     }
 }
 
@@ -66,6 +78,14 @@ task javadocJar(type: Jar) {
 baseline {
     baseline configurations.baseline
 }
+jmh {
+    duplicateClassesStrategy = 'warn'
+    verbosity = 'EXTRA'
+    jvmArgsAppend = ['-Xmx2G','-XX:+UseG1GC', '-verbosegc ']
+    //benchmarkMode = ['all']
+
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
